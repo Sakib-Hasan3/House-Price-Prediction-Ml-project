@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏠 Bangladesh House Price Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-home"></i>
+                <h1>Bangladesh House Price Predictor</h1>
+            </div>
+            <p class="tagline">Accurate property price prediction using Machine Learning</p>
+        </header>
+
+        <div class="dashboard">
+            <!-- Input Form -->
+            <div class="form-container">
+                <div class="card">
+                    <h2><i class="fas fa-edit"></i> Enter Property Details</h2>
+                    
+                    <form id="predictionForm" action="/predict" method="POST">
+                        <div class="form-grid">
+                            <!-- Basic Details -->
+                            <div class="form-group">
+                                <label for="bedrooms">
+                                    <i class="fas fa-bed"></i> Bedrooms
+                                </label>
+                                <select id="bedrooms" name="bedrooms" required>
+                                    <option value="1">1 Bedroom</option>
+                                    <option value="2" selected>2 Bedrooms</option>
+                                    <option value="3">3 Bedrooms</option>
+                                    <option value="4">4 Bedrooms</option>
+                                    <option value="5">5+ Bedrooms</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bathrooms">
+                                    <i class="fas fa-bath"></i> Bathrooms
+                                </label>
+                                <select id="bathrooms" name="bathrooms" required>
+                                    <option value="1" selected>1 Bathroom</option>
+                                    <option value="2">2 Bathrooms</option>
+                                    <option value="3">3 Bathrooms</option>
+                                    <option value="4">4+ Bathrooms</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="floor_no">
+                                    <i class="fas fa-building"></i> Floor Number
+                                </label>
+                                <input type="number" id="floor_no" name="floor_no" 
+                                       min="1" max="50" value="4" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="floor_area">
+                                    <i class="fas fa-ruler-combined"></i> Floor Area (sqft)
+                                </label>
+                                <input type="number" id="floor_area" name="floor_area" 
+                                       min="100" max="10000" step="50" value="1200" required>
+                                <div class="range-display">
+                                    <span>100</span>
+                                    <input type="range" id="area_range" min="100" max="5000" value="1200" 
+                                           oninput="document.getElementById('floor_area').value = this.value">
+                                    <span>5000+</span>
+                                </div>
+                            </div>
+
+                            <!-- Location -->
+                            <div class="form-group">
+                                <label for="city">
+                                    <i class="fas fa-city"></i> City
+                                </label>
+                                <select id="city" name="city" required onchange="updateAreas()">
+                                    {% for city in cities %}
+                                    <option value="{{ city }}" {% if city == 'Dhaka' %}selected{% endif %}>
+                                        {{ city }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="area">
+                                    <i class="fas fa-map-marker-alt"></i> Area
+                                </label>
+                                <select id="area" name="area" required>
+                                    {% for area in areas %}
+                                    <option value="{{ area }}" {% if area == 'Gulshan 1' %}selected{% endif %}>
+                                        {{ area }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn-predict">
+                                <i class="fas fa-calculator"></i> Predict Price
+                            </button>
+                            <button type="button" class="btn-reset" onclick="resetForm()">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Quick Examples -->
+                    <div class="quick-examples">
+                        <h3><i class="fas fa-bolt"></i> Quick Examples:</h3>
+                        <div class="example-buttons">
+                            <button onclick="loadExample('apartment')" class="example-btn">
+                                <i class="fas fa-building"></i> Standard Apartment
+                            </button>
+                            <button onclick="loadExample('luxury')" class="example-btn">
+                                <i class="fas fa-gem"></i> Luxury Flat
+                            </button>
+                            <button onclick="loadExample('affordable')" class="example-btn">
+                                <i class="fas fa-home"></i> Affordable Home
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Result (Initially hidden) -->
+            <div class="result-container" id="resultContainer" style="display: none;">
+                <div class="card result-card">
+                    <h2><i class="fas fa-chart-line"></i> Prediction Result</h2>
+                    <div class="result-content">
+                        <div class="price-display">
+                            <div class="main-price" id="mainPrice">৳0</div>
+                            <div class="price-per-sqft" id="pricePerSqft">৳0/sqft</div>
+                        </div>
+                        
+                        <div class="property-details">
+                            <h3><i class="fas fa-info-circle"></i> Property Details:</h3>
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <span class="detail-label">Bedrooms</span>
+                                    <span class="detail-value" id="detailBedrooms">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Bathrooms</span>
+                                    <span class="detail-value" id="detailBathrooms">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Floor Area</span>
+                                    <span class="detail-value" id="detailArea">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Location</span>
+                                    <span class="detail-value" id="detailLocation">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="actions">
+                            <button onclick="window.location.href='/'" class="btn-new">
+                                <i class="fas fa-plus"></i> New Prediction
+                            </button>
+                            <button onclick="shareResult()" class="btn-share">
+                                <i class="fas fa-share-alt"></i> Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Machine Learning | Trained on real Bangladesh property data</p>
+            <p class="model-info">
+                <i class="fas fa-brain"></i> Model Accuracy: ~85% |
+                <i class="fas fa-database"></i> Trained on 2,800+ properties
+            </p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        // Update areas when city changes
+        function updateAreas() {
+            const city = document.getElementById('city').value;
+            fetch(`/get_areas/${city}`)
+                .then(response => response.json())
+                .then(data => {
+                    const areaSelect = document.getElementById('area');
+                    areaSelect.innerHTML = '';
+                    data.areas.forEach(area => {
+                        const option = document.createElement('option');
+                        option.value = area;
+                        option.textContent = area;
+                        areaSelect.appendChild(option);
+                    });
+                });
+        }
+
+        // Quick examples
+        function loadExample(type) {
+            const examples = {
+                'apartment': { bedrooms: 3, bathrooms: 2, floor_no: 4, floor_area: 1200, city: 'Dhaka', area: 'Gulshan 1' },
+                'luxury': { bedrooms: 4, bathrooms: 4, floor_no: 8, floor_area: 2500, city: 'Dhaka', area: 'Banani' },
+                'affordable': { bedrooms: 2, bathrooms: 1, floor_no: 2, floor_area: 800, city: 'Dhaka', area: 'Mirpur' }
+            };
+            
+            const example = examples[type];
+            for (const key in example) {
+                const element = document.getElementById(key);
+                if (element) element.value = example[key];
+            }
+            
+            // Update area dropdown if needed
+            if (example.city !== document.getElementById('city').value) {
+                document.getElementById('city').value = example.city;
+                updateAreas();
+                setTimeout(() => {
+                    document.getElementById('area').value = example.area;
+                }, 500);
+            } else {
+                document.getElementById('area').value = example.area;
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('predictionForm').reset();
+            document.getElementById('city').value = 'Dhaka';
+            document.getElementById('area').value = 'Gulshan 1';
+            document.getElementById('resultContainer').style.display = 'none';
+        }
+
+        // Handle form submission with AJAX
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            fetch('/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(Object.fromEntries(formData))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update result display
+                    document.getElementById('mainPrice').textContent = data.predicted_price_formatted;
+                    document.getElementById('pricePerSqft').textContent = data.price_per_sqft_formatted;
+                    document.getElementById('detailBedrooms').textContent = data.input_features.Bedrooms;
+                    document.getElementById('detailBathrooms').textContent = data.input_features.Bathrooms;
+                    document.getElementById('detailArea').textContent = `${data.input_features.Floor_area.toLocaleString()} sqft`;
+                    document.getElementById('detailLocation').textContent = `${data.input_features.Area_grouped}, ${data.input_features.City}`;
+                    
+                    // Show result container
+                    document.getElementById('resultContainer').style.display = 'block';
+                    
+                    // Smooth scroll to result
+                    document.getElementById('resultContainer').scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        });
+    </script>
+</body>
+</html>

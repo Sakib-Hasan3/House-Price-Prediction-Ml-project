@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Result - House Price Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-home"></i>
+                <h1>Prediction Result</h1>
+            </div>
+        </header>
+
+        <div class="result-page">
+            <div class="success-card">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                
+                <h2>Price Prediction Complete!</h2>
+                
+                <div class="price-result">
+                    <div class="predicted-price">
+                        {{ result.predicted_price }}
+                    </div>
+                    <div class="price-unit">
+                        {{ result.price_per_sqft }}
+                    </div>
+                </div>
+
+                <div class="property-summary">
+                    <h3><i class="fas fa-info-circle"></i> Property Summary</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="summary-label">Bedrooms</span>
+                            <span class="summary-value">{{ result.details.bedrooms }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Bathrooms</span>
+                            <span class="summary-value">{{ result.details.bathrooms }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Floor Area</span>
+                            <span class="summary-value">{{ result.details.floor_area }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Location</span>
+                            <span class="summary-value">{{ result.details.area }}, {{ result.details.city }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <a href="/" class="btn-new">
+                        <i class="fas fa-plus"></i> New Prediction
+                    </a>
+                    <button onclick="window.print()" class="btn-print">
+                        <i class="fas fa-print"></i> Print Result
+                    </button>
+                    <button onclick="shareResult()" class="btn-share">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                </div>
+
+                <div class="disclaimer">
+                    <p><i class="fas fa-exclamation-circle"></i> 
+                    This prediction is based on machine learning models and should be used as a reference only. 
+                    Actual market prices may vary.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>🏠 Bangladesh House Price Predictor | Powered by Machine Learning</p>
+        </footer>
+    </div>
+
+    <script>
+        function shareResult() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'House Price Prediction Result',
+                    text: 'Check out this house price prediction!',
+                    url: window.location.href
+                });
+            } else {
+                // Fallback: copy to clipboard
+                const text = `Predicted Price: {{ result.predicted_price }}\nProperty: {{ result.details.bedrooms }}BR, {{ result.details.floor_area }}, {{ result.details.area }}, {{ result.details.city }}`;
+                navigator.clipboard.writeText(text);
+                alert('Result copied to clipboard!');
+            }
+        }
+    </script>
+</body>
+</html>
