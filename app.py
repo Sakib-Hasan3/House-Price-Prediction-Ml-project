@@ -15,7 +15,7 @@ try:
     # Optional: load preprocessor if present
     preprocessor = joblib.load(PREPROCESSOR_PATH) if os.path.exists(PREPROCESSOR_PATH) else None
     print("✅ Model loaded successfully")
-except Exception as e:
+except BaseException as e:
     print(f"❌ Error loading model: {e}")
     # Fallback: lightweight heuristic model so UI works in dev
     class FallbackModel:
